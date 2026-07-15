@@ -1,5 +1,10 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { getSupabaseClient } from '@/lib/supabaseAdmin';
+
+function getToken(req: Request): string | null {
+  const auth = req.headers.get('authorization');
+  return auth?.startsWith('Bearer ') ? auth.slice(7) : null;
+}
 
 export async function GET(req: Request) {
   try {
@@ -10,7 +15,9 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'userId is required' }, { status: 400 });
     }
 
-    const { data, error } = await supabaseAdmin
+    const supabase = getSupabaseClient(getToken(req));
+
+    const { data, error } = await supabase
       .from('notifications')
       .select('*')
       .eq('user_id', userId)
@@ -30,12 +37,13 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { user_id, task_id, text, time, read } = body;
+    const supabase = getSupabaseClient(getToken(req));
 
     if (!user_id || !text) {
       return NextResponse.json({ error: 'user_id and text are required' }, { status: 400 });
     }
 
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await supabase
       .from('notifications')
       .insert({
         user_id,
@@ -60,12 +68,13 @@ export async function PUT(req: Request) {
   try {
     const body = await req.json();
     const { user_id, read } = body;
+    const supabase = getSupabaseClient(getToken(req));
 
     if (!user_id) {
       return NextResponse.json({ error: 'user_id is required' }, { status: 400 });
     }
 
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await supabase
       .from('notifications')
       .update({ read: read !== undefined ? read : true })
       .eq('user_id', user_id)
@@ -85,12 +94,13 @@ export async function DELETE(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const userId = searchParams.get('userId');
+    const supabase = getSupabaseClient(getToken(req));
 
     if (!userId) {
       return NextResponse.json({ error: 'userId is required' }, { status: 400 });
     }
 
-    const { error } = await supabaseAdmin
+    const { error } = await supabase
       .from('notifications')
       .delete()
       .eq('user_id', userId);

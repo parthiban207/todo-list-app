@@ -1,12 +1,18 @@
 import { NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { getSupabaseClient } from '@/lib/supabaseAdmin';
+
+function getToken(req: Request): string | null {
+  const auth = req.headers.get('authorization');
+  return auth?.startsWith('Bearer ') ? auth.slice(7) : null;
+}
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
+    const supabase = getSupabaseClient(getToken(req));
 
     if (Array.isArray(body)) {
-      const { data, error } = await supabaseAdmin
+      const { data, error } = await supabase
         .from('subtasks')
         .insert(body)
         .select();
@@ -22,7 +28,7 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'task_id and name are required' }, { status: 400 });
       }
 
-      const { data, error } = await supabaseAdmin
+      const { data, error } = await supabase
         .from('subtasks')
         .insert({
           task_id,
@@ -47,6 +53,7 @@ export async function PUT(req: Request) {
   try {
     const body = await req.json();
     const { id, task_id, ...updates } = body;
+    const supabase = getSupabaseClient(getToken(req));
 
     if (!id && !task_id) {
       return NextResponse.json({ error: 'Either id or task_id is required' }, { status: 400 });
@@ -54,7 +61,7 @@ export async function PUT(req: Request) {
 
     if (id) {
       // Update specific subtask by ID
-      const { data, error } = await supabaseAdmin
+      const { data, error } = await supabase
         .from('subtasks')
         .update(updates)
         .eq('id', id)
@@ -66,7 +73,7 @@ export async function PUT(req: Request) {
       return NextResponse.json(data || []);
     } else {
       // Batch update subtasks by task_id
-      const { data, error } = await supabaseAdmin
+      const { data, error } = await supabase
         .from('subtasks')
         .update(updates)
         .eq('task_id', task_id)
@@ -86,12 +93,13 @@ export async function DELETE(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
+    const supabase = getSupabaseClient(getToken(req));
 
     if (!id) {
       return NextResponse.json({ error: 'id is required' }, { status: 400 });
     }
 
-    const { error } = await supabaseAdmin
+    const { error } = await supabase
       .from('subtasks')
       .delete()
       .eq('id', id);
