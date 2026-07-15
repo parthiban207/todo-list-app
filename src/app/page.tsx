@@ -57,6 +57,24 @@ const DEFAULT_CATEGORIES: Category[] = [
 ];
 
 export default function Home() {
+
+  const apiFetch = async (url: string, options: any = {}) => {
+    let token = '';
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        token = session.access_token;
+      }
+    } catch (e) {}
+    
+    const headers = {
+      ...options.headers,
+      ...(token ? { 'Authorization': \`Bearer \${token}\` } : {})
+    };
+    
+    return fetch(url, { ...options, headers });
+  };
+
   // --- Authentication States ---
   const [userId, setUserId] = useState<string>('');
   const [appReady, setAppReady] = useState(false);
@@ -137,7 +155,7 @@ export default function Home() {
   ) => {
     if (!userId) { showToast('Still authenticating, please wait...', 'warning'); return; }
     
-    const res = await fetch('/api/tasks', {
+    const res = await apiFetch('/api/tasks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -184,7 +202,7 @@ export default function Home() {
 
     const newStatus = task.status === 'completed' ? 'pending' : 'completed';
 
-    const res = await fetch('/api/tasks', {
+    const res = await apiFetch('/api/tasks', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: taskId, status: newStatus })
@@ -196,7 +214,7 @@ export default function Home() {
     }
 
     let nextSubtasks = [...task.subtasks];
-    const subtaskRes = await fetch('/api/subtasks', {
+    const subtaskRes = await apiFetch('/api/subtasks', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ task_id: taskId, completed: newStatus === 'completed' })
@@ -219,7 +237,7 @@ export default function Home() {
   };
 
   const apiDeleteTask = async (taskId: string) => {
-    const res = await fetch(`/api/tasks?id=${taskId}`, {
+    const res = await apiFetch(`/api/tasks?id=${taskId}`, {
       method: 'DELETE'
     });
 
@@ -240,7 +258,7 @@ export default function Home() {
       updates.due_time = dueTime;
     }
 
-    const res = await fetch('/api/tasks', {
+    const res = await apiFetch('/api/tasks', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: taskId, ...updates })
@@ -299,7 +317,7 @@ export default function Home() {
       localUpdates.category = updates.category;
     }
 
-    const res = await fetch('/api/tasks', {
+    const res = await apiFetch('/api/tasks', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: taskId, ...dbUpdates })
@@ -414,7 +432,7 @@ export default function Home() {
 
   const fetchCategories = async (userId: string) => {
     try {
-      const res = await fetch(`/api/categories?userId=${userId}`);
+      const res = await apiFetch(`/api/categories?userId=${userId}`);
       if (!res.ok) throw new Error('Failed to fetch categories');
       const data = await res.json();
 
@@ -427,7 +445,7 @@ export default function Home() {
           color: c.color
         }));
 
-        const insertRes = await fetch('/api/categories', {
+        const insertRes = await apiFetch('/api/categories', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(defaultCats)
@@ -445,7 +463,7 @@ export default function Home() {
 
   const fetchTasks = async (userId: string) => {
     try {
-      const res = await fetch(`/api/tasks?userId=${userId}`);
+      const res = await apiFetch(`/api/tasks?userId=${userId}`);
       if (!res.ok) throw new Error('Failed to fetch tasks');
       const data = await res.json();
 
@@ -483,7 +501,7 @@ export default function Home() {
 
   const fetchNotifications = async (userId: string) => {
     try {
-      const res = await fetch(`/api/notifications?userId=${userId}`);
+      const res = await apiFetch(`/api/notifications?userId=${userId}`);
       if (!res.ok) throw new Error('Failed to fetch notifications');
       const data = await res.json();
 
@@ -546,7 +564,7 @@ export default function Home() {
     ];
 
     try {
-      const taskRes = await fetch('/api/tasks', {
+      const taskRes = await apiFetch('/api/tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(onboardingTasks)
@@ -576,7 +594,7 @@ export default function Home() {
             }
           ];
           
-          await fetch('/api/subtasks', {
+          await apiFetch('/api/subtasks', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(onboardingSubtasks)
@@ -617,7 +635,7 @@ export default function Home() {
         if (changed) {
           updatedTasks.forEach(async task => {
             if (task.notified) {
-              await fetch('/api/tasks', {
+              await apiFetch('/api/tasks', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id: task.id, notified: true })
@@ -655,7 +673,7 @@ export default function Home() {
 
     const timeVal = Date.now();
     try {
-      const res = await fetch('/api/notifications', {
+      const res = await apiFetch('/api/notifications', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -776,7 +794,7 @@ export default function Home() {
           ? (currentTask.dueDate !== taskDueDate || currentTask.dueTime !== taskDueTime || currentTask.reminderMinutesBefore !== reminderMinutes)
           : false;
 
-        const updateRes = await fetch('/api/tasks', {
+        const updateRes = await apiFetch('/api/tasks', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -912,7 +930,7 @@ export default function Home() {
     if (!task) return;
 
     try {
-      const res = await fetch('/api/subtasks', {
+      const res = await apiFetch('/api/subtasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -944,7 +962,7 @@ export default function Home() {
             const originalStatus = t.status;
             const statusVal = originalStatus === 'completed' ? 'inprogress' : originalStatus;
             if (originalStatus === 'completed') {
-              fetch('/api/tasks', {
+              apiFetch('/api/tasks', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id: activeTaskId, status: 'inprogress' })
@@ -978,7 +996,7 @@ export default function Home() {
     const newCompleted = !sub.completed;
 
     try {
-      const res = await fetch('/api/subtasks', {
+      const res = await apiFetch('/api/subtasks', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: subId, completed: newCompleted })
@@ -998,14 +1016,14 @@ export default function Home() {
       let updatedStatus = task.status;
       if (allCompleted) {
         updatedStatus = 'completed';
-        await fetch('/api/tasks', {
+        await apiFetch('/api/tasks', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id: activeTaskId, status: 'completed' })
         });
       } else if (task.status === 'completed') {
         updatedStatus = 'inprogress';
-        await fetch('/api/tasks', {
+        await apiFetch('/api/tasks', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id: activeTaskId, status: 'inprogress' })
@@ -1031,7 +1049,7 @@ export default function Home() {
     if (!activeTaskId) return;
 
     try {
-      const res = await fetch(`/api/subtasks?id=${subId}`, {
+      const res = await apiFetch(`/api/subtasks?id=${subId}`, {
         method: 'DELETE'
       });
 
@@ -1060,7 +1078,7 @@ export default function Home() {
     if (!task) return;
 
     try {
-      const res = await fetch('/api/tasks', {
+      const res = await apiFetch('/api/tasks', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: activeTaskId, status: newStatus })
@@ -1073,7 +1091,7 @@ export default function Home() {
 
       let nextSubtasks = [...task.subtasks];
       if (newStatus === 'completed') {
-        const subtaskRes = await fetch('/api/subtasks', {
+        const subtaskRes = await apiFetch('/api/subtasks', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ task_id: activeTaskId, completed: true })
@@ -1112,7 +1130,7 @@ export default function Home() {
     }
 
     try {
-      const res = await fetch('/api/categories', {
+      const res = await apiFetch('/api/categories', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1260,7 +1278,7 @@ export default function Home() {
     setIsNotificationOpen(prev => !prev);
     
     if (!isNotificationOpen && notifications.some(n => !n.read)) {
-      fetch('/api/notifications', {
+      apiFetch('/api/notifications', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: userId, read: true })
@@ -1273,7 +1291,7 @@ export default function Home() {
   };
 
   const handleClearNotifications = async () => {
-    const res = await fetch(`/api/notifications?userId=${userId}`, {
+    const res = await apiFetch(`/api/notifications?userId=${userId}`, {
       method: 'DELETE'
     });
 
