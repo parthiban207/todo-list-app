@@ -13,7 +13,7 @@ const apiFetchFunc = `
     
     const headers = {
       ...options.headers,
-      ...(token ? { 'Authorization': \\\`Bearer \\\${token}\\\` } : {})
+      ...(token ? { 'Authorization': \`Bearer \${token}\` } : {})
     };
     
     return fetch(url, { ...options, headers });
