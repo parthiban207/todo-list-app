@@ -1228,6 +1228,8 @@ mark.search-highlight {
   color: var(--text-secondary);
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
+  /* stylelint-disable-next-line value-no-vendor-prefix, property-no-vendor-prefix */
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;

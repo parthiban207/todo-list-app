@@ -21,9 +21,9 @@ export async function POST(req: Request) {
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    // Use gemini-1.5-flash as the fast task parsing engine
+    // Use gemini-3.5-flash as the fast task parsing engine
     const model = genAI.getGenerativeModel({
-      model: 'gemini-1.5-flash',
+      model: 'gemini-3.5-flash',
       generationConfig: {
         responseMimeType: "application/json"
       }
@@ -162,7 +162,7 @@ User Message: "${message}"
   } catch (err: any) {
     console.error("Gemini route handler error:", err);
     return NextResponse.json({
-      reply: "Sorry, I encountered a server error while parsing your request.",
+      reply: `Sorry, I encountered an error: ${err.message || err}`,
       action: { type: "none" }
     });
   }
